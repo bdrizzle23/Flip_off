@@ -38,9 +38,16 @@ public interface FlippingConfig extends Config
 	String discordSection = "discord";
 
 	@ConfigSection(
+		name = "Trade Tracking",
+		description = "Personal trade and flip history tracking",
+		position = 4
+	)
+	String trackingSection = "tracking";
+
+	@ConfigSection(
 		name = "Advanced",
 		description = "Advanced plugin settings",
-		position = 4
+		position = 5
 	)
 	String advancedSection = "advanced";
 
@@ -218,6 +225,69 @@ public interface FlippingConfig extends Config
 	default boolean discordBatchNotifications()
 	{
 		return false;
+	}
+
+	@ConfigItem(
+		keyName = "discordNotifyFlips",
+		name = "Notify on Completed Flips",
+		description = "Send Discord notifications when your flips complete",
+		section = discordSection,
+		position = 5
+	)
+	default boolean discordNotifyFlips()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "discordFlipCooldown",
+		name = "Flip Cooldown (minutes)",
+		description = "Minimum time between Discord notifications for completed flips of same item",
+		section = discordSection,
+		position = 6
+	)
+	@Range(min = 0, max = 60)
+	default int discordFlipCooldown()
+	{
+		return 0;
+	}
+
+	// Trade Tracking
+	@ConfigItem(
+		keyName = "enableTradeTracking",
+		name = "Enable Trade Tracking",
+		description = "Track your GE offers and flip history",
+		section = trackingSection,
+		position = 0
+	)
+	default boolean enableTradeTracking()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "showTradeHistory",
+		name = "Show Trade History",
+		description = "Display completed flips in the panel",
+		section = trackingSection,
+		position = 1
+	)
+	default boolean showTradeHistory()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "maxTradeHistory",
+		name = "Max History Entries",
+		description = "Maximum number of completed flips to show",
+		section = trackingSection,
+		position = 2
+	)
+	@Range(min = 10, max = 200)
+	default int maxTradeHistory()
+	{
+		return 50;
 	}
 
 	// Advanced

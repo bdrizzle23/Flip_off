@@ -205,6 +205,112 @@ public class DiscordNotifier {
     }
 
     /**
+     * Send a completed flip notification to Discord
+     */
+    public void sendFlipCompletion(String webhookUrl, FlipTransaction flip) {
+        if (webhookUrl == null || webhookUrl.trim().isEmpty()) {
+            log.debug("Discord webhook URL not configured, skipping flip notification");
+            return;
+        }
+
+        JsonObject payload = new JsonObject();
+
+        // Create embed for completed flip
+        JsonObject embed = new JsonObject();
+        embed.addProperty("title", "✅ Flip Completed: " + flip.getItemName());
+        embed.addProperty("timestamp", Instant.now().toString());
+
+        // Color based on profit
+        if (flip.getProfit() > 0) {
+            embed.addProperty("color", 0x00FF00); // Green for profit
+        } else {
+            embed.addProperty("color", 0xFF0000); // Red for loss
+        }
+
+        // Add fields
+        JsonArray fields = new JsonArray();
+
+        // Quantity
+        JsonObject qtyField = new JsonObject();
+        qtyField.addProperty("name", "📦 Quantity");
+        qtyField.addProperty("value", formatNumber(flip.getQuantity()));
+        qtyField.addProperty("inline", true);
+        fields.add(qtyField);
+
+        // Buy Price
+        JsonObject buyField = new JsonObject();
+        buyField.addProperty("name", "💰 Buy Price");
+        buyField.addProperty("value", formatNumber(flip.getBuyPrice()) + " gp");
+        buyField.addProperty("inline", true);
+        fields.add(buyField);
+
+        // Sell Price
+        JsonObject sellField = new JsonObject();
+        sellField.addProperty("name", "💵 Sell Price");
+        sellField.addProperty("value", formatNumber(flip.getSellPrice()) + " gp");
+        sellField.addProperty("inline", true);
+        fields.add(sellField);
+
+        // Total Profit
+        JsonObject profitField = new JsonObject();
+        profitField.addProperty("name", "📈 Total Profit");
+        String profitText = (flip.getProfit() >= 0 ? "+" : "") + formatNumber(flip.getProfit()) + " gp";
+        profitField.addProperty("value", profitText);
+        profitField.addProperty("inline", true);
+        fields.add(profitField);
+
+        // ROI
+        JsonObject roiField = new JsonObject();
+        roiField.addProperty("name", "📊 ROI");
+        roiField.addProperty("value", String.format("%.2f%%", flip.getRoi()));
+        roiField.addProperty("inline", true);
+        fields.add(roiField);
+
+        // Tax Paid
+        JsonObject taxField = new JsonObject();
+        taxField.addProperty("name", "💸 GE Tax");
+        taxField.addProperty("value", formatNumber(flip.getTax()) + " gp");
+        taxField.addProperty("inline", true);
+        fields.add(taxField);
+
+        // Flip Duration
+        JsonObject durationField = new JsonObject();
+        durationField.addProperty("name", "⏱️ Duration");
+        double hours = flip.getFlipDurationHours();
+        String durationText;
+        if (hours < 1) {
+            durationText = String.format("%.0f minutes", hours * 60);
+        } else if (hours < 24) {
+            durationText = String.format("%.1f hours", hours);
+        } else {
+            durationText = String.format("%.1f days", hours / 24);
+        }
+        durationField.addProperty("value", durationText);
+        durationField.addProperty("inline", true);
+        fields.add(durationField);
+
+        // Profit per hour
+        JsonObject profitPerHourField = new JsonObject();
+        profitPerHourField.addProperty("name", "💹 Profit/Hour");
+        profitPerHourField.addProperty("value", formatNumber((int) flip.getProfitPerHour()) + " gp");
+        profitPerHourField.addProperty("inline", true);
+        fields.add(profitPerHourField);
+
+        embed.add("fields", fields);
+
+        // Footer
+        JsonObject footer = new JsonObject();
+        footer.addProperty("text", "Flipping Optimizer • Personal Trade");
+        embed.add("footer", footer);
+
+        JsonArray embeds = new JsonArray();
+        embeds.add(embed);
+        payload.add("embeds", embeds);
+
+        sendWebhook(webhookUrl, payload);
+    }
+
+    /**
      * Send the webhook request to Discord
      */
     private void sendWebhook(String webhookUrl, JsonObject payload) {

@@ -4,8 +4,11 @@ import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.GrandExchangeOffer;
+import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GrandExchangeOfferChanged;
 import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -68,6 +71,9 @@ public class FlippingPlugin extends Plugin
 	private DiscordNotifier discordNotifier;
 
 	@Inject
+	private TradeHistoryManager tradeHistoryManager;
+
+	@Inject
 	private ScheduledExecutorService executorService;
 
 	private FlippingPanel panel;
@@ -75,6 +81,7 @@ public class FlippingPlugin extends Plugin
 	private ScheduledFuture<?> updateTask;
 	private final List<FlippingOpportunity> currentOpportunities = new ArrayList<>();
 	private final Map<Integer, Long> discordCooldowns = new HashMap<>();
+	private final Map<Integer, Long> flipNotificationCooldowns = new HashMap<>();
 
 	@Override
 	protected void startUp() throws Exception
@@ -139,6 +146,83 @@ public class FlippingPlugin extends Plugin
 		{
 			log.debug("Player logged in, fetching initial price data");
 			executorService.schedule(this::refreshOpportunities, 5, TimeUnit.SECONDS);
+		}
+	}
+
+	@Subscribe
+	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event)
+	{
+		if (!config.enableTradeTracking())
+		{
+			return;
+		}
+
+		GrandExchangeOffer offer = event.getOffer();
+		int slot = event.getSlot();
+
+		// Get item info
+		int itemId = offer.getItemId();
+		String itemName = getItemName(itemId);
+		int price = offer.getPrice();
+		int totalQuantity = offer.getTotalQuantity();
+		int currentQuantity = offer.getQuantitySold();
+		int actualQuantity = currentQuantity; // Quantity that has been bought/sold
+
+		// Determine trade type
+		Trade.TradeType tradeType = offer.isSell() ? Trade.TradeType.SELL : Trade.TradeType.BUY;
+
+		// Map GE offer state to trade state
+		Trade.TradeState tradeState = mapOfferState(offer.getState());
+
+		// Update trade in history manager
+		tradeHistoryManager.updateTrade(
+			slot,
+			itemId,
+			itemName,
+			actualQuantity,
+			price,
+			currentQuantity,
+			totalQuantity,
+			tradeType,
+			tradeState
+		);
+
+		// Check for completed flips and send Discord notifications
+		if (tradeState == Trade.TradeState.COMPLETED && config.enableDiscord() && config.discordNotifyFlips())
+		{
+			// Get recent flips for this item
+			List<FlipTransaction> recentFlips = tradeHistoryManager.getAllCompletedFlips().stream()
+				.filter(f -> f.getItemId() == itemId)
+				.filter(f -> System.currentTimeMillis() - f.getSellTime() < 5000) // Last 5 seconds
+				.collect(Collectors.toList());
+
+			for (FlipTransaction flip : recentFlips)
+			{
+				sendFlipDiscordNotification(flip);
+			}
+		}
+	}
+
+	/**
+	 * Map GrandExchangeOfferState to Trade.TradeState
+	 */
+	private Trade.TradeState mapOfferState(GrandExchangeOfferState state)
+	{
+		switch (state)
+		{
+			case EMPTY:
+				return Trade.TradeState.EMPTY;
+			case CANCELLED_BUY:
+			case CANCELLED_SELL:
+				return Trade.TradeState.CANCELLED;
+			case BUYING:
+			case SELLING:
+				return Trade.TradeState.PENDING;
+			case BOUGHT:
+			case SOLD:
+				return Trade.TradeState.COMPLETED;
+			default:
+				return Trade.TradeState.EMPTY;
 		}
 	}
 
@@ -392,6 +476,33 @@ public class FlippingPlugin extends Plugin
 		}
 
 		log.debug("Sent {} Discord notification(s)", discordOpportunities.size());
+	}
+
+	/**
+	 * Send Discord notification for a completed flip
+	 */
+	private void sendFlipDiscordNotification(FlipTransaction flip)
+	{
+		String webhookUrl = config.discordWebhookUrl();
+		if (webhookUrl == null || webhookUrl.trim().isEmpty())
+		{
+			return;
+		}
+
+		// Check cooldown
+		long cooldownMillis = config.discordFlipCooldown() * 60 * 1000L;
+		long currentTime = System.currentTimeMillis();
+		Long lastNotified = flipNotificationCooldowns.get(flip.getItemId());
+
+		if (lastNotified != null && (currentTime - lastNotified) < cooldownMillis)
+		{
+			return; // Still in cooldown
+		}
+
+		flipNotificationCooldowns.put(flip.getItemId(), currentTime);
+
+		// Send notification via DiscordNotifier
+		discordNotifier.sendFlipCompletion(webhookUrl, flip);
 	}
 
 	@Provides
