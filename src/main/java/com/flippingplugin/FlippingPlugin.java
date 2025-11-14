@@ -96,20 +96,29 @@ public class FlippingPlugin extends Plugin
 		panel = injector.getInstance(FlippingPanel.class);
 		panel.setRefreshAction(this::refreshOpportunities);
 
-		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
-		if (icon != null)
+		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
+		if (icon == null)
 		{
-			navButton = NavigationButton.builder()
-				.tooltip("Flipping Optimizer")
-				.icon(icon)
-				.priority(5)
-				.panel(panel)
-				.build();
+			log.warn("Could not load icon.png, using default icon");
+			// Create a simple default icon if the resource isn't found
+			icon = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		}
 
-			if (config.enablePanel())
-			{
-				clientToolbar.addNavigation(navButton);
-			}
+		navButton = NavigationButton.builder()
+			.tooltip("Flipping Optimizer")
+			.icon(icon)
+			.priority(5)
+			.panel(panel)
+			.build();
+
+		if (config.enablePanel())
+		{
+			clientToolbar.addNavigation(navButton);
+			log.info("Side panel added to toolbar");
+		}
+		else
+		{
+			log.info("Side panel disabled in config");
 		}
 
 		// Start auto-refresh if enabled
