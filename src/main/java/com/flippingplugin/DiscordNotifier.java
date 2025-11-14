@@ -204,6 +204,10 @@ public class DiscordNotifier {
         return NUMBER_FORMAT.format(number);
     }
 
+    private String formatNumber(long number) {
+        return NUMBER_FORMAT.format(number);
+    }
+
     /**
      * Send a completed flip notification to Discord
      */
