@@ -252,6 +252,18 @@ public interface FlippingConfig extends Config
 		return 0;
 	}
 
+	@ConfigItem(
+		keyName = "discordPatternFilter",
+		name = "Pattern Filter",
+		description = "Only send Discord notifications for specific pattern (ALL for any pattern)",
+		section = discordSection,
+		position = 7
+	)
+	default DiscordPatternFilter discordPatternFilter()
+	{
+		return DiscordPatternFilter.ALL;
+	}
+
 	// Trade Tracking
 	@ConfigItem(
 		keyName = "enableTradeTracking",

@@ -446,12 +446,14 @@ public class FlippingPlugin extends Plugin
 		}
 
 		OpportunityGrade minGrade = config.discordMinGrade();
+		DiscordPatternFilter patternFilter = config.discordPatternFilter();
 		long cooldownMillis = config.discordCooldown() * 60 * 1000L;
 		long currentTime = System.currentTimeMillis();
 
-		// Filter opportunities by grade and cooldown
+		// Filter opportunities by grade, pattern, and cooldown
 		List<FlippingOpportunity> discordOpportunities = opportunities.stream()
 			.filter(opp -> opp.getGrade().getMinScore() >= minGrade.getMinScore())
+			.filter(patternFilter::matches)
 			.filter(opp -> {
 				Long lastNotified = discordCooldowns.get(opp.getItemId());
 				if (lastNotified == null || (currentTime - lastNotified) >= cooldownMillis)
