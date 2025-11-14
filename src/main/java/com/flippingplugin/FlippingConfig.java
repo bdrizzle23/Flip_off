@@ -55,14 +55,14 @@ public interface FlippingConfig extends Config
 	@ConfigItem(
 		keyName = "minVolume",
 		name = "Minimum Daily Volume",
-		description = "Minimum number of daily trades required (default: 1000)",
+		description = "Minimum number of daily trades required (default: 10 for testing)",
 		section = volumeSection,
 		position = 0
 	)
-	@Range(min = 100, max = 100000)
+	@Range(min = 1, max = 100000)
 	default int minVolume()
 	{
-		return 1000;
+		return 10;
 	}
 
 	@ConfigItem(

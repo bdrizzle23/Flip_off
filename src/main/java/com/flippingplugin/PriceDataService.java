@@ -153,6 +153,18 @@ public class PriceDataService
 		}
 
 		long totalVolume = priceData.getHighPriceVolume() + priceData.getLowPriceVolume();
+
+		// Log first few items to debug volume data
+		if (priceData.getItemId() % 1000 == 0) // Sample logging
+		{
+			log.debug("Item {} volume: high={}, low={}, total={}, threshold={}",
+				priceData.getItemId(),
+				priceData.getHighPriceVolume(),
+				priceData.getLowPriceVolume(),
+				totalVolume,
+				minVolume);
+		}
+
 		return totalVolume >= minVolume;
 	}
 

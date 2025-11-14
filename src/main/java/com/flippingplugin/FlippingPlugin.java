@@ -99,9 +99,15 @@ public class FlippingPlugin extends Plugin
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
 		if (icon == null)
 		{
-			log.warn("Could not load icon.png, using default icon");
-			// Create a simple default icon if the resource isn't found
+			log.warn("Could not load icon.png, creating default icon");
+			// Create a simple green square icon as default
 			icon = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+			java.awt.Graphics2D g = icon.createGraphics();
+			g.setColor(new java.awt.Color(0, 200, 0)); // Green
+			g.fillRect(0, 0, 16, 16);
+			g.setColor(java.awt.Color.WHITE);
+			g.drawString("$", 4, 12);
+			g.dispose();
 		}
 
 		navButton = NavigationButton.builder()
