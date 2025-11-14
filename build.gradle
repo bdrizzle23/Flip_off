@@ -50,7 +50,9 @@ checkstyle {
 
 test {
 	// Allow build to succeed even with no tests
-	failOnNoTestsMatched = false
+	filter {
+		failOnNoMatchingTests = false
+	}
 }
 
 tasks.register('shadowJar', Jar) {
