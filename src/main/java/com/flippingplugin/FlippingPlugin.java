@@ -318,17 +318,24 @@ public class FlippingPlugin extends Plugin
 	{
 		try
 		{
-			log.debug("Refreshing flipping opportunities...");
+			log.info("Refreshing flipping opportunities...");
 
 			// Fetch latest prices
 			Map<Integer, ItemPriceData> priceData = priceDataService.fetchLatestPrices();
+			log.info("Fetched {} items from OSRS Wiki API", priceData.size());
+
 			if (priceData.isEmpty())
 			{
-				log.warn("No price data available");
+				log.warn("No price data available from API");
 				return;
 			}
 
 			List<FlippingOpportunity> opportunities = new ArrayList<>();
+			int filteredByVolume = 0;
+			int filteredByPrice = 0;
+			int filteredByRoi = 0;
+			int filteredByProfit = 0;
+			int filteredByGrade = 0;
 
 			for (Map.Entry<Integer, ItemPriceData> entry : priceData.entrySet())
 			{
@@ -338,12 +345,14 @@ public class FlippingPlugin extends Plugin
 				// Filter by volume threshold
 				if (!priceDataService.meetsVolumeThreshold(data, config.minVolume()))
 				{
+					filteredByVolume++;
 					continue;
 				}
 
 				// Filter by valid prices
 				if (data.getLowPrice() <= 0 || data.getHighPrice() <= 0)
 				{
+					filteredByPrice++;
 					continue;
 				}
 
@@ -367,23 +376,31 @@ public class FlippingPlugin extends Plugin
 				// Filter by minimum ROI
 				if (opportunity.getRoiPercentage() < config.minROI())
 				{
+					filteredByRoi++;
 					continue;
 				}
 
 				// Filter by minimum profit
 				if (opportunity.getProfitAfterTax() < config.minProfit())
 				{
+					filteredByProfit++;
 					continue;
 				}
 
 				// Filter by grade
 				if (opportunity.getGrade().getMinScore() < config.minGrade().getMinScore())
 				{
+					filteredByGrade++;
 					continue;
 				}
 
 				opportunities.add(opportunity);
 			}
+
+			// Log filtering results
+			log.info("Filtered items - Volume: {}, Price: {}, ROI: {}, Profit: {}, Grade: {}",
+				filteredByVolume, filteredByPrice, filteredByRoi, filteredByProfit, filteredByGrade);
+			log.info("Found {} opportunities after filtering", opportunities.size());
 
 			// Sort by score (highest first)
 			opportunities.sort(Comparator.comparingInt(FlippingOpportunity::getScore).reversed());
@@ -402,12 +419,19 @@ public class FlippingPlugin extends Plugin
 				currentOpportunities.addAll(opportunities);
 			}
 
+			log.info("Updating panel with {} opportunities", opportunities.size());
+
 			// Update panel
 			if (panel != null)
 			{
 				panel.updateOpportunities(opportunities);
 				panel.updateHistory();
 				panel.updateStatistics();
+				log.info("Panel updated successfully");
+			}
+			else
+			{
+				log.warn("Panel is null, cannot update UI");
 			}
 
 			// Send notifications for high-quality opportunities
