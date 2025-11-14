@@ -62,13 +62,27 @@ public class PriceDataService
 		{
 			if (!response.isSuccessful())
 			{
-				log.error("Failed to fetch prices: {}", response.code());
+				log.error("Failed to fetch prices: HTTP {}", response.code());
 				return new HashMap<>();
 			}
 
 			String responseBody = response.body().string();
+			log.info("API response body length: {} bytes", responseBody.length());
+
 			JsonObject jsonObject = gson.fromJson(responseBody, JsonObject.class);
+			if (jsonObject == null)
+			{
+				log.error("Failed to parse JSON response");
+				return new HashMap<>();
+			}
+
 			JsonObject data = jsonObject.getAsJsonObject("data");
+			if (data == null)
+			{
+				log.error("No 'data' field in API response. Response keys: {}", jsonObject.keySet());
+				return new HashMap<>();
+			}
+			log.info("API data object has {} items", data.size());
 
 			Map<Integer, ItemPriceData> prices = new HashMap<>();
 			int itemsWithVolume = 0;
