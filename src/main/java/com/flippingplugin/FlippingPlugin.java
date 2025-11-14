@@ -21,6 +21,7 @@ import javax.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -64,12 +65,16 @@ public class FlippingPlugin extends Plugin
 	private Notifier notifier;
 
 	@Inject
+	private DiscordNotifier discordNotifier;
+
+	@Inject
 	private ScheduledExecutorService executorService;
 
 	private FlippingPanel panel;
 	private NavigationButton navButton;
 	private ScheduledFuture<?> updateTask;
 	private final List<FlippingOpportunity> currentOpportunities = new ArrayList<>();
+	private final Map<Integer, Long> discordCooldowns = new HashMap<>();
 
 	@Override
 	protected void startUp() throws Exception
@@ -122,6 +127,7 @@ public class FlippingPlugin extends Plugin
 
 		// Clear data
 		currentOpportunities.clear();
+		discordCooldowns.clear();
 		priceDataService.clearCache();
 		patternDetector.clearHistory();
 	}
@@ -260,6 +266,12 @@ public class FlippingPlugin extends Plugin
 				sendNotifications(opportunities);
 			}
 
+			// Send Discord notifications if enabled
+			if (config.enableDiscord())
+			{
+				sendDiscordNotifications(opportunities);
+			}
+
 			log.debug("Found {} flipping opportunities", opportunities.size());
 		}
 		catch (Exception e)
@@ -326,6 +338,60 @@ public class FlippingPlugin extends Plugin
 		{
 			return new ArrayList<>(currentOpportunities);
 		}
+	}
+
+	/**
+	 * Sends Discord notifications for high-quality opportunities
+	 */
+	private void sendDiscordNotifications(List<FlippingOpportunity> opportunities)
+	{
+		String webhookUrl = config.discordWebhookUrl();
+		if (webhookUrl == null || webhookUrl.trim().isEmpty())
+		{
+			log.debug("Discord webhook URL not configured");
+			return;
+		}
+
+		OpportunityGrade minGrade = config.discordMinGrade();
+		long cooldownMillis = config.discordCooldown() * 60 * 1000L;
+		long currentTime = System.currentTimeMillis();
+
+		// Filter opportunities by grade and cooldown
+		List<FlippingOpportunity> discordOpportunities = opportunities.stream()
+			.filter(opp -> opp.getGrade().getMinScore() >= minGrade.getMinScore())
+			.filter(opp -> {
+				Long lastNotified = discordCooldowns.get(opp.getItemId());
+				if (lastNotified == null || (currentTime - lastNotified) >= cooldownMillis)
+				{
+					discordCooldowns.put(opp.getItemId(), currentTime);
+					return true;
+				}
+				return false;
+			})
+			.collect(Collectors.toList());
+
+		if (discordOpportunities.isEmpty())
+		{
+			log.debug("No opportunities meet Discord notification criteria");
+			return;
+		}
+
+		// Send notifications
+		if (config.discordBatchNotifications())
+		{
+			// Send as batch summary
+			discordNotifier.sendOpportunitySummary(webhookUrl, discordOpportunities, discordOpportunities.size());
+		}
+		else
+		{
+			// Send individual notifications
+			for (FlippingOpportunity opp : discordOpportunities)
+			{
+				discordNotifier.sendOpportunity(webhookUrl, opp, opp.getItemName());
+			}
+		}
+
+		log.debug("Sent {} Discord notification(s)", discordOpportunities.size());
 	}
 
 	@Provides

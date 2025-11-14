@@ -31,9 +31,16 @@ public interface FlippingConfig extends Config
 	String alertsSection = "alerts";
 
 	@ConfigSection(
+		name = "Discord",
+		description = "Discord webhook integration settings",
+		position = 3
+	)
+	String discordSection = "discord";
+
+	@ConfigSection(
 		name = "Advanced",
 		description = "Advanced plugin settings",
-		position = 3
+		position = 4
 	)
 	String advancedSection = "advanced";
 
@@ -149,6 +156,68 @@ public interface FlippingConfig extends Config
 	default boolean flashCrashAlert()
 	{
 		return true;
+	}
+
+	// Discord
+	@ConfigItem(
+		keyName = "enableDiscord",
+		name = "Enable Discord Notifications",
+		description = "Send flipping opportunities to Discord via webhook",
+		section = discordSection,
+		position = 0
+	)
+	default boolean enableDiscord()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "discordWebhookUrl",
+		name = "Discord Webhook URL",
+		description = "Your Discord webhook URL (create one in Server Settings > Integrations)",
+		section = discordSection,
+		position = 1
+	)
+	default String discordWebhookUrl()
+	{
+		return "";
+	}
+
+	@ConfigItem(
+		keyName = "discordMinGrade",
+		name = "Discord Grade Threshold",
+		description = "Only send Discord notifications for this grade or better",
+		section = discordSection,
+		position = 2
+	)
+	default OpportunityGrade discordMinGrade()
+	{
+		return OpportunityGrade.B_PLUS;
+	}
+
+	@ConfigItem(
+		keyName = "discordCooldown",
+		name = "Cooldown (minutes)",
+		description = "Minimum time between Discord notifications for the same item",
+		section = discordSection,
+		position = 3
+	)
+	@Range(min = 1, max = 60)
+	default int discordCooldown()
+	{
+		return 5;
+	}
+
+	@ConfigItem(
+		keyName = "discordBatchNotifications",
+		name = "Batch Notifications",
+		description = "Send opportunities as a summary instead of individual messages",
+		section = discordSection,
+		position = 4
+	)
+	default boolean discordBatchNotifications()
+	{
+		return false;
 	}
 
 	// Advanced
