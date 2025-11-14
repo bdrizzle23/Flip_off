@@ -71,12 +71,22 @@ public class PriceDataService
 			JsonObject data = jsonObject.getAsJsonObject("data");
 
 			Map<Integer, ItemPriceData> prices = new HashMap<>();
+			int itemsWithVolume = 0;
+			boolean loggedSample = false;
+
 			for (Map.Entry<String, JsonElement> entry : data.entrySet())
 			{
 				try
 				{
 					int itemId = Integer.parseInt(entry.getKey());
 					JsonObject itemData = entry.getValue().getAsJsonObject();
+
+					// Log a sample item to see what fields are available
+					if (!loggedSample)
+					{
+						log.info("Sample API response for item {}: {}", itemId, itemData.toString());
+						loggedSample = true;
+					}
 
 					ItemPriceData priceData = new ItemPriceData();
 					priceData.setItemId(itemId);
@@ -88,6 +98,10 @@ public class PriceDataService
 					if (itemData.has("highPriceVolume"))
 					{
 						priceData.setHighPriceVolume(itemData.get("highPriceVolume").getAsLong());
+						if (itemData.get("highPriceVolume").getAsLong() > 0)
+						{
+							itemsWithVolume++;
+						}
 					}
 					if (itemData.has("low"))
 					{
@@ -111,7 +125,7 @@ public class PriceDataService
 				}
 			}
 
-			log.debug("Fetched price data for {} items", prices.size());
+			log.info("Fetched price data for {} items ({} with volume data)", prices.size(), itemsWithVolume);
 			return prices;
 		}
 		catch (IOException e)
