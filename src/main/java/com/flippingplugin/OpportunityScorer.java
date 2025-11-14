@@ -148,7 +148,7 @@ public class OpportunityScorer
 	private double calculateVolatilityScore(int itemId, ItemPriceData priceData)
 	{
 		double volatility = patternDetector.calculateVolatility(
-			patternDetector.priceHistory.get(itemId)
+			patternDetector.getPriceHistory(itemId)
 		);
 
 		// Sweet spot is moderate volatility (5-15%)
@@ -200,7 +200,7 @@ public class OpportunityScorer
 			.timestamp(System.currentTimeMillis())
 			.tax(tax)
 			.priceVolatility(patternDetector.calculateVolatility(
-				patternDetector.priceHistory.get(itemId)))
+				patternDetector.getPriceHistory(itemId)))
 			.highVolume(priceData.getHighPriceVolume())
 			.lowVolume(priceData.getLowPriceVolume())
 			.build();

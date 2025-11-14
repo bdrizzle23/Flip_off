@@ -290,6 +290,16 @@ public class PatternDetector
 	}
 
 	/**
+	 * Gets price history for a specific item
+	 * @param itemId The item ID
+	 * @return Queue of price history, or null if not available
+	 */
+	public Queue<ItemPriceData> getPriceHistory(int itemId)
+	{
+		return priceHistory.get(itemId);
+	}
+
+	/**
 	 * Clears price history for all items
 	 */
 	public void clearHistory()
