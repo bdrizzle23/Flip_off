@@ -1,15 +1,18 @@
 package com.flippingplugin;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.PluginErrorPanel;
+import net.runelite.client.util.AsyncBufferedImage;
 import net.runelite.client.util.QuantityFormatter;
 
 import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,6 +30,7 @@ public class FlippingPanel extends PluginPanel
 
 	private final FlippingConfig config;
 	private final TradeHistoryManager tradeHistoryManager;
+	private final ItemManager itemManager;
 
 	// Main components
 	private final JTabbedPane tabbedPane = new JTabbedPane();
@@ -50,11 +54,12 @@ public class FlippingPanel extends PluginPanel
 	private final JLabel weekProfitLabel = new JLabel();
 
 	@Inject
-	public FlippingPanel(FlippingConfig config, TradeHistoryManager tradeHistoryManager)
+	public FlippingPanel(FlippingConfig config, TradeHistoryManager tradeHistoryManager, ItemManager itemManager)
 	{
 		super(false);
 		this.config = config;
 		this.tradeHistoryManager = tradeHistoryManager;
+		this.itemManager = itemManager;
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -307,6 +312,16 @@ public class FlippingPanel extends PluginPanel
 		panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		panel.setBorder(new EmptyBorder(8, 8, 8, 8));
 
+		// Get item image
+		AsyncBufferedImage itemImage = itemManager.getImage(opportunity.getItemId());
+		JLabel itemIcon = new JLabel();
+		itemIcon.setPreferredSize(new Dimension(36, 32));
+		if (itemImage != null)
+		{
+			itemImage.onLoaded(() -> itemIcon.setIcon(new ImageIcon(itemImage)));
+			itemIcon.setIcon(new ImageIcon(itemImage));
+		}
+
 		// Top row: Item name and grade
 		JPanel topRow = new JPanel(new BorderLayout());
 		topRow.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -314,6 +329,7 @@ public class FlippingPanel extends PluginPanel
 		JLabel itemName = new JLabel(opportunity.getItemName());
 		itemName.setForeground(Color.WHITE);
 		itemName.setFont(new Font("Arial", Font.BOLD, 12));
+		itemName.setBorder(new EmptyBorder(0, 5, 0, 0));
 
 		JLabel gradeLabel = new JLabel(opportunity.getGrade().getDisplayName());
 		gradeLabel.setForeground(getGradeColor(opportunity.getGrade()));
@@ -376,6 +392,8 @@ public class FlippingPanel extends PluginPanel
 		content.add(Box.createRigidArea(new Dimension(0, 3)));
 		content.add(infoRow);
 
+		// Add icon on left, content in center
+		panel.add(itemIcon, BorderLayout.WEST);
 		panel.add(content, BorderLayout.CENTER);
 
 		return panel;
@@ -388,6 +406,16 @@ public class FlippingPanel extends PluginPanel
 		panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		panel.setBorder(new EmptyBorder(8, 8, 8, 8));
 
+		// Get item image
+		AsyncBufferedImage itemImage = itemManager.getImage(flip.getItemId());
+		JLabel itemIcon = new JLabel();
+		itemIcon.setPreferredSize(new Dimension(36, 32));
+		if (itemImage != null)
+		{
+			itemImage.onLoaded(() -> itemIcon.setIcon(new ImageIcon(itemImage)));
+			itemIcon.setIcon(new ImageIcon(itemImage));
+		}
+
 		// Top row: Item name and profit
 		JPanel topRow = new JPanel(new BorderLayout());
 		topRow.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -395,6 +423,7 @@ public class FlippingPanel extends PluginPanel
 		JLabel itemName = new JLabel(flip.getItemName() + " x" + flip.getQuantity());
 		itemName.setForeground(Color.WHITE);
 		itemName.setFont(new Font("Arial", Font.BOLD, 12));
+		itemName.setBorder(new EmptyBorder(0, 5, 0, 0));
 
 		JLabel profitLabel = new JLabel(formatProfit(flip.getProfit()));
 		profitLabel.setForeground(flip.getProfit() > 0 ? PROFIT_COLOR : LOSS_COLOR);
@@ -446,6 +475,8 @@ public class FlippingPanel extends PluginPanel
 		content.add(Box.createRigidArea(new Dimension(0, 3)));
 		content.add(statsRow);
 
+		// Add icon on left, content in center
+		panel.add(itemIcon, BorderLayout.WEST);
 		panel.add(content, BorderLayout.CENTER);
 
 		return panel;
