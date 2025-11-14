@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'checkstyle'
 }
 
 repositories {
@@ -18,26 +19,44 @@ def runeLiteVersion = 'latest.release'
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
 
-	compileOnly 'org.projectlombok:lombok:1.18.30'
-	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	compileOnly 'org.projectlombok:lombok:1.18.36'
+	annotationProcessor 'org.projectlombok:lombok:1.18.36'
 
 	testImplementation 'junit:junit:4.12'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
-group = 'com.example'
+group = 'com.flippingplugin'
 version = '1.0-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8'
-	options.release.set(11)
+	options.compilerArgs << '-parameters'
+}
+
+checkstyle {
+	toolVersion = '10.3.1'
+	maxWarnings = 999  // Allow style warnings without failing build
+	configFile = file("${rootDir}/checkstyle.xml")
+	ignoreFailures = true  // Don't fail build on style violations
+}
+
+// Skip test task - we don't have actual unit tests, just a launcher
+test {
+	enabled = false
 }
 
 tasks.register('shadowJar', Jar) {
 	dependsOn configurations.testRuntimeClasspath
 	manifest {
-		attributes('Main-Class': 'com.example.ExamplePluginTest', 'Multi-Release': true)
+		attributes('Main-Class': 'com.flippingplugin.FlippingPluginTest', 'Multi-Release': true)
 	}
 
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
