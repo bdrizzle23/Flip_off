@@ -48,11 +48,9 @@ checkstyle {
 	ignoreFailures = true  // Don't fail build on style violations
 }
 
+// Skip test task - we don't have actual unit tests, just a launcher
 test {
-	// Allow build to succeed even with no tests
-	filter {
-		failOnNoMatchingTests = false
-	}
+	enabled = false
 }
 
 tasks.register('shadowJar', Jar) {
