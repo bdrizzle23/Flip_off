@@ -94,7 +94,8 @@ public class FlippingPlugin extends Plugin
 
 		// Create and add panel
 		panel = injector.getInstance(FlippingPanel.class);
-		panel.setRefreshAction(this::refreshOpportunities);
+		// Wrap refresh action in executor to run on background thread (avoid AWT thread blocking)
+		panel.setRefreshAction(() -> executorService.submit(this::refreshOpportunities));
 
 		BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/icon.png");
 		if (icon == null)
