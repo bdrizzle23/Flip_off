@@ -187,6 +187,13 @@ public class FlippingPlugin extends Plugin
 			tradeState
 		);
 
+		// Update panel when trade completes
+		if (tradeState == Trade.TradeState.COMPLETED && panel != null)
+		{
+			panel.updateHistory();
+			panel.updateStatistics();
+		}
+
 		// Check for completed flips and send Discord notifications
 		if (tradeState == Trade.TradeState.COMPLETED && config.enableDiscord() && config.discordNotifyFlips())
 		{
@@ -342,6 +349,8 @@ public class FlippingPlugin extends Plugin
 			if (panel != null)
 			{
 				panel.updateOpportunities(opportunities);
+				panel.updateHistory();
+				panel.updateStatistics();
 			}
 
 			// Send notifications for high-quality opportunities
