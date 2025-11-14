@@ -111,7 +111,7 @@ public class DiscordNotifier {
         profitField.addProperty("name", "📈 Profit");
         profitField.addProperty("value", String.format("**%s gp**\nROI: %.2f%%",
             formatNumber(opportunity.getProfitAfterTax()),
-            opportunity.getRoi()));
+            opportunity.getRoiPercentage()));
         profitField.addProperty("inline", true);
         fields.add(profitField);
 
@@ -126,7 +126,7 @@ public class DiscordNotifier {
         // Volume
         JsonObject volumeField = new JsonObject();
         volumeField.addProperty("name", "🔄 Volume");
-        volumeField.addProperty("value", formatNumber(opportunity.getVolume()) + " trades/day");
+        volumeField.addProperty("value", formatNumber(opportunity.getDailyVolume()) + " trades/day");
         volumeField.addProperty("inline", true);
         fields.add(volumeField);
 

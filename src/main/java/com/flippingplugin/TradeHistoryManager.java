@@ -197,6 +197,14 @@ public class TradeHistoryManager
 	}
 
 	/**
+	 * Get trade by GE slot number
+	 */
+	public Trade getTradeBySlot(int slot)
+	{
+		return activeTrades.get(slot);
+	}
+
+	/**
 	 * Get completed flips
 	 */
 	public List<FlipTransaction> getCompletedFlips(int limit)

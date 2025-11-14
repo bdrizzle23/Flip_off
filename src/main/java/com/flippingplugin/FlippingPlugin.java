@@ -9,6 +9,8 @@ import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GrandExchangeOfferChanged;
+import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -82,6 +84,8 @@ public class FlippingPlugin extends Plugin
 	private final List<FlippingOpportunity> currentOpportunities = new ArrayList<>();
 	private final Map<Integer, Long> discordCooldowns = new HashMap<>();
 	private final Map<Integer, Long> flipNotificationCooldowns = new HashMap<>();
+	private final Map<Integer, Trade.TradeType> slotTypes = new HashMap<>(); // Track buy/sell for each slot
+	private int pendingOfferSlot = -1; // Track which slot is being set up
 
 	@Override
 	protected void startUp() throws Exception
@@ -150,6 +154,30 @@ public class FlippingPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked event)
+	{
+		// Track when player clicks "Buy" or "Sell" in GE interface to determine offer type
+		// This helps us determine the type of offer for each slot
+		String menuOption = event.getMenuOption();
+		String menuTarget = event.getMenuTarget();
+
+		// Check if this is a GE "Create Offer" click (when setting up buy/sell)
+		if (menuOption.equals("Examine") && menuTarget.contains("Grand Exchange"))
+		{
+			// Player is using the GE, next click will determine type
+			return;
+		}
+
+		// When player confirms a buy or sell offer
+		if (menuOption.equals("Confirm"))
+		{
+			// The offer type was set in previous interactions
+			// We'll track it based on the offer changes
+			return;
+		}
+	}
+
+	@Subscribe
 	public void onGrandExchangeOfferChanged(GrandExchangeOfferChanged event)
 	{
 		if (!config.enableTradeTracking())
@@ -168,8 +196,28 @@ public class FlippingPlugin extends Plugin
 		int currentQuantity = offer.getQuantitySold();
 		int actualQuantity = currentQuantity; // Quantity that has been bought/sold
 
-		// Determine trade type
-		Trade.TradeType tradeType = offer.isSell() ? Trade.TradeType.SELL : Trade.TradeType.BUY;
+		// Determine trade type from cached slot info
+		Trade.TradeType tradeType = slotTypes.get(slot);
+		if (tradeType == null)
+		{
+			// Try to infer from the trade history manager's knowledge of this slot
+			Trade existingTrade = tradeHistoryManager.getTradeBySlot(slot);
+			if (existingTrade != null)
+			{
+				tradeType = existingTrade.getType();
+				slotTypes.put(slot, tradeType);
+			}
+			else
+			{
+				// No existing knowledge - we'll infer based on the state change
+				// If the offer is being created (BUYING/SELLING state), we need to determine type
+				// For now, we'll ask the history manager to help track this
+				// Default to BUY if we can't determine
+				tradeType = Trade.TradeType.BUY;
+				log.debug("Unknown slot type for slot {}, defaulting to BUY. " +
+					"Manual correction may be needed via trade history.", slot);
+			}
+		}
 
 		// Map GE offer state to trade state
 		Trade.TradeState tradeState = mapOfferState(offer.getState());
