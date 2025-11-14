@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PriceDataService
 {
 	private static final String OSRS_WIKI_API = "https://prices.runescape.wiki/api/v1/osrs";
-	private static final String LATEST_PRICES_ENDPOINT = "/latest";
+	private static final String LATEST_PRICES_ENDPOINT = "/5m"; // Use 5m endpoint for volume data
 	private static final String TIMESERIES_ENDPOINT = "/timeseries";
 	private static final String USER_AGENT = "RuneLite Flipping Plugin";
 
@@ -111,10 +111,26 @@ public class PriceDataService
 					ItemPriceData priceData = new ItemPriceData();
 					priceData.setItemId(itemId);
 
-					if (itemData.has("high"))
+					// /5m endpoint uses avgHighPrice and avgLowPrice
+					if (itemData.has("avgHighPrice"))
+					{
+						priceData.setHighPrice(itemData.get("avgHighPrice").getAsInt());
+					}
+					else if (itemData.has("high"))
 					{
 						priceData.setHighPrice(itemData.get("high").getAsInt());
 					}
+
+					if (itemData.has("avgLowPrice"))
+					{
+						priceData.setLowPrice(itemData.get("avgLowPrice").getAsInt());
+					}
+					else if (itemData.has("low"))
+					{
+						priceData.setLowPrice(itemData.get("low").getAsInt());
+					}
+
+					// Volume data
 					if (itemData.has("highPriceVolume"))
 					{
 						priceData.setHighPriceVolume(itemData.get("highPriceVolume").getAsLong());
@@ -122,10 +138,6 @@ public class PriceDataService
 						{
 							itemsWithVolume++;
 						}
-					}
-					if (itemData.has("low"))
-					{
-						priceData.setLowPrice(itemData.get("low").getAsInt());
 					}
 					if (itemData.has("lowPriceVolume"))
 					{
