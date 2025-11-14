@@ -46,10 +46,14 @@ public class PriceDataService
 	 */
 	public Map<Integer, ItemPriceData> fetchLatestPrices()
 	{
-		HttpUrl url = HttpUrl.parse(OSRS_WIKI_API + LATEST_PRICES_ENDPOINT);
+		log.info("Fetching prices from OSRS Wiki API...");
+		String fullUrl = OSRS_WIKI_API + LATEST_PRICES_ENDPOINT;
+		log.info("API URL: {}", fullUrl);
+
+		HttpUrl url = HttpUrl.parse(fullUrl);
 		if (url == null)
 		{
-			log.error("Invalid URL for OSRS Wiki API");
+			log.error("Invalid URL for OSRS Wiki API: {}", fullUrl);
 			return new HashMap<>();
 		}
 
@@ -57,6 +61,8 @@ public class PriceDataService
 			.url(url)
 			.header("User-Agent", USER_AGENT)
 			.build();
+
+		log.info("Sending HTTP request to {}", url);
 
 		try (Response response = httpClient.newCall(request).execute())
 		{
@@ -144,7 +150,12 @@ public class PriceDataService
 		}
 		catch (IOException e)
 		{
-			log.error("Error fetching price data", e);
+			log.error("IOException fetching price data: {} - {}", e.getClass().getName(), e.getMessage(), e);
+			return new HashMap<>();
+		}
+		catch (Exception e)
+		{
+			log.error("Unexpected error fetching price data: {} - {}", e.getClass().getName(), e.getMessage(), e);
 			return new HashMap<>();
 		}
 	}
